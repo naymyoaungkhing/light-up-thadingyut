@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070920">
+  <meta name="description" content="Light Up Thadingyut — a one-minute Festival of Lights game. Six challenges, one festival score, climb the leaderboard.">
+  <title>Light Up Thadingyut</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Manrope:wght@400;500;600;700;800&family=Noto+Serif+Myanmar:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=1.0.1">
+</head>
+<body data-screen="title">
+
+  <!-- Shared SVG paint servers for emblems (must not be display:none) -->
+  <svg class="svg-defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <defs>
+      <radialGradient id="em-bg" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#2a2466"/><stop offset="1" stop-color="#0d0f33"/></radialGradient>
+      <radialGradient id="em-halo"><stop offset="0" stop-color="#ffd27d" stop-opacity=".55"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></radialGradient>
+      <linearGradient id="em-gold" x1="0" x2="1"><stop offset="0" stop-color="#a0651e"/><stop offset=".4" stop-color="#f4c769"/><stop offset=".55" stop-color="#fff1c4"/><stop offset=".75" stop-color="#e3a445"/><stop offset="1" stop-color="#8b5519"/></linearGradient>
+      <linearGradient id="em-copper" x1="0" x2="1"><stop offset="0" stop-color="#7a3f17"/><stop offset=".5" stop-color="#e0914a"/><stop offset="1" stop-color="#6d3512"/></linearGradient>
+      <linearGradient id="em-flame" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff6a2b"/><stop offset=".6" stop-color="#ffb347"/><stop offset="1" stop-color="#ffe7a8"/></linearGradient>
+    </defs>
+  </svg>
+
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="moon" aria-hidden="true"></div>
+  <div class="skyline" id="skyline" aria-hidden="true"></div>
+
+  <main id="app">
+    <button id="mute-btn" class="icon-btn mute-btn" data-action="mute" aria-label="Mute sound" aria-pressed="false">
+      <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 9.5l5 5m0-5l-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+
+    <!-- ============================== TITLE ============================== -->
+    <section class="screen screen-title scroll active" id="screen-title" aria-labelledby="game-title">
+      <div class="title-lanterns" aria-hidden="true">
+        <span style="--x:5%;--len:66px;--s:30px;--d:3.1s"></span>
+        <span style="--x:15%;--len:24px;--s:22px;--d:3.6s"></span>
+        <span style="--x:80%;--len:30px;--s:24px;--d:3.3s"></span>
+        <span style="--x:93%;--len:18px;--s:26px;--d:2.9s"></span>
+      </div>
+
+      <div class="title-wrap">
+        <p class="title-my" lang="my">သီတင်းကျွတ် မီးထွန်းပွဲတော်</p>
+        <h1 class="title" id="game-title">
+          <span class="t-small">Light up</span>
+          <span class="t-big">Thadingyut</span>
+        </h1>
+        <div class="ornament-wrap" data-ornament></div>
+        <p class="eyebrow">Festival of Lights</p>
+        <p class="tagline">Six quick challenges. About a minute. Light the pagoda and climb the festival leaderboard.</p>
+
+        <form id="start-form" class="start-form" novalidate autocomplete="off">
+          <label for="username" class="field-label">Your player name</label>
+          <div class="field">
+            <input id="username" name="username" maxlength="24" placeholder="e.g. MingalarMoon" autocomplete="nickname"
+                   autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" aria-describedby="username-error username-hint">
+          </div>
+          <p class="field-error" id="username-error" role="alert"></p>
+          <p class="field-hint" id="username-hint">Shown on the public leaderboard. No phone or email needed to play.</p>
+          <button type="submit" class="btn btn-primary btn-play">
+            <span>Play</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>
+          </button>
+          <p class="welcome" id="welcome" hidden></p>
+        </form>
+
+        <div class="card board-preview">
+          <div class="card-head">
+            <h2>Tonight’s brightest</h2>
+            <button type="button" class="link-btn" data-action="open-board">Full board</button>
+          </div>
+          <ol class="board-list compact" id="preview-list"></ol>
+        </div>
+
+        <p class="fineprint">Prototype · simulated leaderboard stored on this device</p>
+      </div>
+    </section>
+
+    <!-- ============================== GAME ============================== -->
+    <section class="screen screen-game" id="screen-game" aria-label="Game">
+      <div class="hud">
+        <div class="hud-row">
+          <button type="button" class="icon-btn" data-action="pause" aria-label="Pause">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>
+          </button>
+          <div class="hud-stage">
+            <span class="hud-stage-num" id="hud-stage-num">Stage 1/6</span>
+            <span class="hud-stage-name" id="hud-stage-name">Light the Lanterns</span>
+          </div>
+          <div class="hud-score" aria-live="off">
+            <span class="hud-score-label">Score</span>
+            <span class="hud-score-val" id="hud-score">0</span>
+          </div>
+        </div>
+        <div class="hud-sub">
+          <div class="hud-progress" id="hud-progress" aria-hidden="true"></div>
+          <div class="hud-combo" id="hud-combo" data-mult="1">
+            <span class="hud-combo-val" id="hud-combo-val">x1</span>
+            <span class="hud-combo-track"><i id="hud-combo-bar"></i></span>
+          </div>
+        </div>
+        <div class="hud-timer" id="hud-timer"><i id="hud-timer-fill"></i></div>
+      </div>
+
+      <div class="stage-area" id="stage-area"></div>
+
+      <div class="combo-pop" id="combo-pop" aria-hidden="true"></div>
+
+      <div class="overlay intro" id="stage-intro" role="dialog" aria-live="polite">
+        <div class="intro-card">
+          <span class="intro-my" id="intro-my" aria-hidden="true">၁</span>
+          <p class="intro-kicker" id="intro-kicker">Stage 1 of 6</p>
+          <h2 class="intro-title" id="intro-title">Light the Lanterns</h2>
+          <p class="intro-title-my" id="intro-title-my" lang="my"></p>
+          <div class="intro-demo" id="intro-demo"></div>
+          <p class="intro-text" id="intro-text"></p>
+          <div class="intro-progress"><i id="intro-bar"></i></div>
+          <p class="intro-skip">Tap to start</p>
+        </div>
+      </div>
+
+      <div class="overlay clear" id="stage-clear" aria-live="polite">
+        <div class="clear-card">
+          <p class="clear-kicker">Stage clear</p>
+          <p class="clear-title" id="clear-title"></p>
+          <p class="clear-points" id="clear-points"></p>
+        </div>
+      </div>
+
+      <div class="overlay pause" id="pause-overlay" role="dialog" aria-label="Paused">
+        <div class="pause-card card">
+          <h2>Paused</h2>
+          <p>The festival will wait for you.</p>
+          <button type="button" class="btn btn-primary" data-action="resume">Resume</button>
+          <button type="button" class="btn btn-ghost" data-action="restart">Restart run</button>
+          <button type="button" class="btn btn-text" data-action="quit">Quit to title</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== RESULTS ============================== -->
+    <section class="screen screen-results scroll" id="screen-results" aria-labelledby="res-title">
+      <div class="page results-page">
+        <header class="res-head">
+          <p class="kicker" id="res-title">Festival score</p>
+          <div class="res-score" id="r-score">0</div>
+          <p class="badge-best" id="r-newbest" hidden>New personal best</p>
+          <div class="res-stats">
+            <div><b id="r-acc">0%</b><span>Accuracy</span></div>
+            <div><b id="r-combo">x1</b><span>Best combo</span></div>
+            <div><b id="r-perfect">0</b><span>Perfect hits</span></div>
+            <div><b id="r-time">0s</b><span>Time</span></div>
+          </div>
+        </header>
+
+        <div class="card rank-card ornate" id="r-rank-card">
+          <p class="kicker">Your rank</p>
+          <div class="rank-num"><span class="hash">#</span><span id="r-rank">—</span></div>
+          <p class="rank-of">of <span id="r-total">…</span> lantern lighters</p>
+          <ol class="board-list neighbors" id="r-neighbors"></ol>
+          <p class="chase" id="r-chase" hidden></p>
+          <p class="best-line" id="r-best"></p>
+        </div>
+
+        <div class="reward-card card" id="r-reward">
+          <div class="reward-main">
+            <div class="reward-emblem" id="r-emblem"></div>
+            <div class="reward-info">
+              <p class="kicker" id="r-tier-kicker">Reward</p>
+              <h3 id="r-tier-name">—</h3>
+              <p class="reward-my" id="r-tier-my" lang="my"></p>
+              <p class="reward-blurb" id="r-tier-blurb"></p>
+            </div>
+          </div>
+          <div class="next-tier" id="r-next" hidden></div>
+          <ol class="tier-ladder" id="r-ladder" aria-label="Reward brackets"></ol>
+        </div>
+
+        <details class="card breakdown">
+          <summary>How you scored</summary>
+          <ul id="r-breakdown"></ul>
+        </details>
+
+        <button type="button" class="link-btn center" data-action="open-board">View full leaderboard</button>
+      </div>
+      <div class="res-actions">
+        <button type="button" class="btn btn-ghost" data-action="replay">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2.1-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Play again
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-claim" data-action="claim" disabled>Claim reward</button>
+      </div>
+    </section>
+
+    <!-- ============================== LEADERBOARD ============================== -->
+    <section class="screen screen-board scroll" id="screen-board" aria-labelledby="board-title">
+      <div class="page">
+        <div class="page-head">
+          <button type="button" class="back-btn" data-action="board-back" aria-label="Back">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div>
+            <h2 id="board-title">Festival Leaderboard</h2>
+            <p class="board-sub">Top 50 · simulated for this prototype</p>
+          </div>
+        </div>
+        <div class="card">
+          <ol class="board-list full" id="board-full"></ol>
+          <div id="board-you" hidden></div>
+        </div>
+        <p class="fineprint">Only player names and scores are public. Contact details are never shown.</p>
+      </div>
+    </section>
+
+    <!-- ============================== CLAIM ============================== -->
+    <section class="screen screen-claim scroll" id="screen-claim" aria-labelledby="claim-title">
+      <div class="page">
+        <div class="page-head">
+          <button type="button" class="back-btn" data-action="claim-back" aria-label="Back to results">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <h2 id="claim-title">Claim your reward</h2>
+        </div>
+        <div class="claim-hero">
+          <div id="claim-emblem"></div>
+          <div>
+            <p class="kicker">Reward bracket</p>
+            <p class="claim-tier" id="claim-tier"></p>
+            <p class="claim-meta" id="claim-meta"></p>
+          </div>
+        </div>
+        <form id="claim-form" class="card form-card" novalidate>
+          <div class="field-group">
+            <label for="c-phone">Mobile number</label>
+            <input id="c-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="09 xxx xxx xxx" aria-describedby="e-phone">
+            <p class="field-error" id="e-phone" role="alert"></p>
+          </div>
+          <div class="field-group">
+            <label for="c-email">Email address</label>
+            <input id="c-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" placeholder="you@example.com" aria-describedby="e-email">
+            <p class="field-error" id="e-email" role="alert"></p>
+          </div>
+          <label class="check">
+            <input type="checkbox" id="c-consent">
+            <span>Contact me about this reward only.</span>
+          </label>
+          <p class="field-error" id="e-consent" role="alert"></p>
+          <div class="privacy-note">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            <p>Your contact information is private and will never appear on the public leaderboard.</p>
+          </div>
+          <button type="submit" class="btn btn-primary">Submit claim</button>
+          <p class="fineprint">Demo prototype — no SMS or email will be sent.</p>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================== CLAIMED ============================== -->
+    <section class="screen screen-claimed scroll" id="screen-claimed" aria-labelledby="claimed-title">
+      <div class="page claimed-page">
+        <div class="claimed-emblem" id="cd-emblem"></div>
+        <p class="kicker">Reward claimed</p>
+        <h2 id="claimed-title"><span id="cd-tier"></span></h2>
+        <div class="card claim-id-card ornate">
+          <p class="kicker">Claim ID</p>
+          <p class="claim-id" id="cd-id">TDG-00000</p>
+          <button type="button" class="link-btn" id="cd-copy" data-action="copy-claim">Copy ID</button>
+          <p class="claim-contact" id="cd-contact"></p>
+        </div>
+        <p class="claim-note" id="cd-note"></p>
+        <ol class="next-steps">
+          <li>Your score is verified at the end of the festival.</li>
+          <li>Confirmed winners receive a reward code by SMS and email.</li>
+          <li>Show the code to redeem. <em>(Demo: nothing is sent.)</em></li>
+        </ol>
+        <div class="stack">
+          <button type="button" class="btn btn-primary" data-action="replay">Play again</button>
+          <button type="button" class="btn btn-ghost" data-action="open-board">Leaderboard</button>
+          <button type="button" class="btn btn-text" data-action="home">Back to title</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <div id="float-layer" aria-hidden="true"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Order matters: config → core → services → ui → stages → main -->
+  <script src="js/config.js?v=1.0.1"></script>
+  <script src="js/core/util.js?v=1.0.1"></script>
+  <script src="js/core/clock.js?v=1.0.1"></script>
+  <script src="js/core/events.js?v=1.0.1"></script>
+  <script src="js/core/audio.js?v=1.0.1"></script>
+  <script src="js/core/fx.js?v=1.0.1"></script>
+  <script src="js/core/state.js?v=1.0.1"></script>
+  <script src="js/core/score.js?v=1.0.1"></script>
+  <script src="js/services/leaderboard.js?v=1.0.1"></script>
+  <script src="js/services/rewards.js?v=1.0.1"></script>
+  <script src="js/ui/view.js?v=1.0.1"></script>
+  <script src="js/ui/ui.js?v=1.0.1"></script>
+  <script src="js/stages/manager.js?v=1.0.1"></script>
+  <script src="js/stages/stage1-lanterns.js?v=1.0.1"></script>
+  <script src="js/stages/stage2-catch.js?v=1.0.1"></script>
+  <script src="js/stages/stage3-flame.js?v=1.0.1"></script>
+  <script src="js/stages/stage4-memory.js?v=1.0.1"></script>
+  <script src="js/stages/stage5-rush.js?v=1.0.1"></script>
+  <script src="js/stages/stage6-pagoda.js?v=1.0.1"></script>
+  <script src="js/main.js?v=1.0.1"></script>
+</body>
+</html>
